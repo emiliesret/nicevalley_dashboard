@@ -211,37 +211,22 @@ st.pyplot(plot_series(df_monthly["Mois"], df_monthly["Footfall"],
 
 # --- Export PDF ---
 st.header("5. Export PDF")
-if st.button("Générer le rapport PDF"):
-    pdf = FPDF('P', 'mm', 'A4')
-    pdf.add_page()
-
-    # Titre
-    pdf.set_font('Arial', 'B', 16)
-    pdf.cell(0, 10, f"Rapport Nice Valley ({start} – {end})", ln=True, align='C')
-    pdf.ln(5)
-
-    # (… KPI …)
-
-    # Helper pour insérer une figure déjà créée
-    def add_figure(title, fig):
-        pdf.set_font('Arial', 'B', 12)
-        pdf.cell(0, 6, title, ln=True)
-        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+if st.button("📄 Générer le rapport PDF"):
+    pdf = FPDF('P','mm','A4'); pdf.add_page()
+    pdf.set_font('Arial','B',16)
+    pdf.cell(0,10,f"Rapport Nice Valley ({start}–{end})",ln=True,align='C')
+    tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+    for title, fig in [
+        ("Followers vs Budget",   plot_series(df_monthly["Mois"], df_monthly["Followers"], "","", "")),
+        ("Visites profil",        plot_series(df_monthly["Mois"], df_monthly["Visites"],"","", "")),
+        ("Vues contenu",          plot_series(df_monthly["Mois"], df_monthly["Vues"],   "","", "")),
+        ("Footfall mensuel",      plot_series(df_monthly["Mois"], df_monthly["Footfall"],"","", "")),
+    ]:
+        pdf.set_font('Arial','B',12); pdf.cell(0,6,title,ln=True)
         fig.savefig(tmp.name, dpi=150, bbox_inches='tight')
-        pdf.image(tmp.name, x=15, w=180)
-        pdf.ln(5)
-        tmp.close()
-
-    # Ici on réutilise vos fig1, fig2, …, fig5 au lieu de re-tracer
-    add_figure("Followers vs Budget",            fig1)
-    add_figure("Coût par follower mensuel",      fig2)
-    add_figure("Visites de profil",              fig3)
-    add_figure("Vues de contenu",                fig4)
-    add_figure("Footfall mensuel",               fig5)
-
+        pdf.image(tmp.name, x=15, w=180); pdf.ln(5)
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     fname = f"rapport_nice_valley_{start.replace(' ','_')}-{end.replace(' ','_')}.pdf"
-    st.download_button("⬇️ Télécharger le rapport PDF",
-                       pdf_bytes, file_name=fname, mime="application/pdf")
+    st.download_button("⬇️ Télécharger PDF", pdf_bytes, file_name=fname, mime="application/pdf")
 
 st.markdown("© Nice Valley Dashboard — Généré avec Streamlit")
