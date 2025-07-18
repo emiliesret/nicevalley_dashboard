@@ -11,26 +11,21 @@ st.title("Dashboard Communication & Animations — Nice Valley")
 
 # --- Sidebar: Data Uploads ---
 st.sidebar.header("Importer tes données")
-followers_file = st.sidebar.file_uploader("CSV « Followers en plus »",    type=["csv"])
-visites_file   = st.sidebar.file_uploader("CSV « Visites »",             type=["csv"])
-vues_file      = st.sidebar.file_uploader("CSV « Vues »",                type=["csv"])
-budget_file    = st.sidebar.file_uploader("Budget mensuel (CSV/XLSX)",   type=["csv","xlsx"])
-traffic_file   = st.sidebar.file_uploader("CSV/Excel « myTraffic »",     type=["csv","xlsx"])
+followers_file = st.sidebar.file_uploader("CSV « Followers en plus »", type=["csv"])
+visites_file   = st.sidebar.file_uploader("CSV « Visites »",        type=["csv"])
+vues_file      = st.sidebar.file_uploader("CSV « Vues »",           type=["csv"])
+budget_file    = st.sidebar.file_uploader("Budget mensuel (CSV/XLSX)", type=["csv","xlsx"])
+traffic_file   = st.sidebar.file_uploader("CSV/Excel « myTraffic »",   type=["csv","xlsx"])
 if not (followers_file and visites_file and vues_file and budget_file and traffic_file):
-    st.sidebar.info("Upload tes 5 fichiers : followers, visites, vues, budget, myTraffic")
+    st.sidebar.info("Upload tes 5 fichiers : followers, visites, vues, budget, myTraffic")
     st.stop()
 
 # --- CSV Loader & Cleaner ---
 @st.cache_data
 def load_and_clean_csv(file, col_name):
     df = pd.read_csv(
-        file,
-        encoding='utf-16',
-        sep=',',
-        skiprows=2,
-        names=["Date", col_name],
-        dtype=str,
-        na_filter=False
+        file, encoding='utf-16', sep=',', skiprows=2,
+        names=["Date", col_name], dtype=str, na_filter=False
     )
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
     df = df.dropna(subset=["Date"])
@@ -38,7 +33,7 @@ def load_and_clean_csv(file, col_name):
     df["Mois"] = df["Date"].dt.to_period("M").dt.to_timestamp()
     return df
 
-# --- Budget Loader (CSV ou XLSX) ---
+# --- Budget Loader (CSV or XLSX) ---
 @st.cache_data
 def load_budget(file):
     name = file.name.lower()
@@ -50,9 +45,9 @@ def load_budget(file):
     else:
         raw = pd.read_excel(file, header=2, engine='openpyxl', dtype=str)
         month_cols = {
-            'JANVIER':1, 'FÉVRIER':2, 'MARS':3, 'AVRIL':4,
-            'MAI':5, 'JUIN':6, 'JUILLET':7, 'AOUT':8,
-            'SEPTEMBRE':9, 'OCTOBRE':10, 'NOVEMBRE':11, 'DÉCEMBRE':12
+            'JANVIER':1,'FÉVRIER':2,'MARS':3,'AVRIL':4,
+            'MAI':5,'JUIN':6,'JUILLET':7,'AOUT':8,
+            'SEPTEMBRE':9,'OCTOBRE':10,'NOVEMBRE':11,'DÉCEMBRE':12
         }
         mask = raw.iloc[:,0].str.contains("total", case=False, na=False)
         row = raw[mask].iloc[-1]
@@ -69,7 +64,7 @@ def load_budget(file):
         df = pd.DataFrame({"Mois": months, "Budget": budgets})
     return df
 
-# --- Traffic Loader (CSV ou XLSX) ---
+# --- Traffic Loader (CSV or XLSX) ---
 @st.cache_data
 def load_traffic(file):
     name = file.name.lower()
@@ -84,7 +79,7 @@ def load_traffic(file):
                                              format="%G-W%V-%u", errors="coerce")
             df["Count"] = pd.to_numeric(raw["Centre commercial Nice Valley"], errors="coerce").fillna(0)
         else:
-            df = raw.rename(columns={raw.columns[0]: "Timestamp", raw.columns[1]: "Count"})
+            df = raw.rename(columns={raw.columns[0]:"Timestamp", raw.columns[1]:"Count"})
             df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
             df["Count"] = pd.to_numeric(df["Count"], errors="coerce").fillna(0)
     df = df.dropna(subset=["Timestamp"])
@@ -131,15 +126,15 @@ avg_growth = growth.mean()
 idx_peak   = growth.idxmax()
 peak_month = df_monthly.loc[idx_peak,"Mois"].strftime("%b %Y") if not growth.empty else "-"
 c5, c6, c7, c8 = st.columns(4)
-c5.metric("Conv. Followers/Vues", f"{conv_f:.2f}%",         help="% de vues menant à un nouvel abonné.")
-c6.metric("Conv. Visites/Vues",   f"{conv_v:.2f}%",         help="% de vues menant à une visite de profil.")
+c5.metric("Conv. Followers/Vues", f"{conv_f:.2f}%",           help="% de vues menant à un nouvel abonné.")
+c6.metric("Conv. Visites/Vues",   f"{conv_v:.2f}%",           help="% de vues menant à une visite de profil.")
 c7.metric("Croissance mensuelle", f"{avg_growth:.0f} foll/mois", help="Gain moyen de nouveaux abonnés par mois.")
-c8.metric("Mois de pic growth",   peak_month,               help="Mois avec le plus fort gain d’abonnés.")
+c8.metric("Mois de pic growth",   peak_month,                 help="Mois avec le plus fort gain d’abonnés.")
 
 # --- KPI Footfall ---
 st.markdown("### KPI Traffic physique")
 total_footfall = int(df_monthly["Footfall"].sum())
-st.metric("Total Footfall", f"{total_footall:,}", help="Total des passages physiques au centre.")
+st.metric("Total Footfall", f"{total_footfall:,}", help="Total des passages physiques au centre.")
 
 # --- Data Table ---
 st.subheader("Données consolidées")
@@ -150,14 +145,17 @@ st.dataframe(df_disp.style.format({
     "Budget":"{:.0f}",    "Footfall":"{:,}"
 }), use_container_width=True)
 
-# --- Plot helper ---
-def plot_series(x, y, title, ylabel, sec=None, sec_label=None):
+# --- Plot helper: n’utilise color que si non-None ---
+def plot_series(x, y, title, ylabel, color=None, sec=None, sec_label=None):
     fig, ax = plt.subplots(figsize=(10,4))
-    ax.plot(x, y, marker="o")
+    if color:
+        ax.plot(x, y, marker="o", color=color)
+    else:
+        ax.plot(x, y, marker="o")
     ax.set_ylabel(ylabel)
     if sec is not None:
         ax2 = ax.twinx()
-        ax2.plot(x, sec, marker="s", linestyle="--")
+        ax2.plot(x, sec, marker="s", linestyle="--", color="tab:red")
         ax2.set_ylabel(sec_label)
     ax.set_xticks(x)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
@@ -169,40 +167,41 @@ def plot_series(x, y, title, ylabel, sec=None, sec_label=None):
 fig1 = plot_series(
     df_monthly["Mois"], df_monthly["Followers"],
     "Followers vs Budget", "Followers",
-    sec=df_monthly["Budget"], sec_label="Budget (EUR)"
+    color="tab:blue", sec=df_monthly["Budget"], sec_label="Budget (EUR)"
 )
 st.pyplot(fig1)
 
 fig2 = plot_series(
     df_monthly["Mois"], df_monthly["Visites"],
-    "Visites profil", "Visites"
+    "Visites profil", "Visites",
+    color="tab:orange"
 )
 st.pyplot(fig2)
 
 fig3 = plot_series(
     df_monthly["Mois"], df_monthly["Vues"],
-    "Vues contenu", "Vues"
+    "Vues contenu", "Vues",
+    color="tab:green"
 )
 st.pyplot(fig3)
 
 fig4 = plot_series(
     df_monthly["Mois"], df_monthly["Footfall"],
-    "Footfall mensuel", "Footfall"
+    "Footfall mensuel", "Footfall",
+    color="tab:gray"
 )
 st.pyplot(fig4)
 
 # --- Export PDF ---
 st.header("Export PDF")
 if st.button("Générer le rapport PDF"):
-    pdf = FPDF('P','mm','A4')
-    pdf.add_page()
+    pdf = FPDF('P','mm','A4'); pdf.add_page()
     pdf.set_font('Arial','B',16)
     pdf.cell(0,10, f"Rapport Nice Valley ({start} – {end})", ln=True, align='C')
     pdf.ln(5)
 
     # KPI Principaux
-    pdf.set_font('Arial','B',14)
-    pdf.cell(0,8,"KPI principaux", ln=True)
+    pdf.set_font('Arial','B',14); pdf.cell(0,8,"KPI principaux", ln=True)
     pdf.set_font('Arial','',11)
     pdf.cell(0,6,f"Total Followers     : {int(agg_f.sum()):,}", ln=True)
     pdf.cell(0,6,f"Total Visites       : {int(agg_v.sum()):,}", ln=True)
@@ -211,8 +210,7 @@ if st.button("Générer le rapport PDF"):
     pdf.ln(5)
 
     # KPI Additionnels
-    pdf.set_font('Arial','B',14)
-    pdf.cell(0,8,"KPI additionnels", ln=True)
+    pdf.set_font('Arial','B',14); pdf.cell(0,8,"KPI additionnels", ln=True)
     pdf.set_font('Arial','',11)
     pdf.cell(0,6,f"Conv. Foll./Vues    : {conv_f:.2f} %", ln=True)
     pdf.cell(0,6,f"Conv. Vis./Vues     : {conv_v:.2f} %", ln=True)
@@ -221,13 +219,12 @@ if st.button("Générer le rapport PDF"):
     pdf.ln(5)
 
     # KPI Footfall
-    pdf.set_font('Arial','B',14)
-    pdf.cell(0,8,"KPI Traffic physique", ln=True)
+    pdf.set_font('Arial','B',14); pdf.cell(0,8,"KPI Traffic physique", ln=True)
     pdf.set_font('Arial','',11)
     pdf.cell(0,6,f"Total Footfall      : {total_footfall:,}", ln=True)
     pdf.ln(5)
 
-    # Figures
+    # Figures helper
     def add_figure(title, fig):
         pdf.set_font('Arial','B',12)
         pdf.cell(0,6, title, ln=True)
@@ -245,7 +242,7 @@ if st.button("Générer le rapport PDF"):
     pdf_bytes = pdf.output(dest='S').encode('latin-1', 'ignore')
     fname = f"rapport_nice_valley_{start.replace(' ','_')}_{end.replace(' ','_')}.pdf"
     st.download_button("Télécharger le rapport PDF", pdf_bytes, file_name=fname, mime="application/pdf")
-    st.success("Rapport PDF généré avec succès !")
+    st.success("Rapport PDF généré !")
 else:
     st.info("Clique sur le bouton pour générer le rapport PDF.")
 
