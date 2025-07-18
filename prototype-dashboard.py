@@ -33,7 +33,7 @@ def load_and_clean_csv(file, col_name):
     df["Mois"] = df["Date"].dt.to_period("M").dt.to_timestamp()
     return df
 
-# --- Budget Loader (CSV or XLSX) ---
+# --- Budget Loader (CSV ou XLSX) ---
 @st.cache_data
 def load_budget(file):
     name = file.name.lower()
@@ -64,7 +64,7 @@ def load_budget(file):
         df = pd.DataFrame({"Mois": months, "Budget": budgets})
     return df
 
-# --- Traffic Loader (CSV or XLSX) ---
+# --- Traffic Loader (CSV ou XLSX) ---
 @st.cache_data
 def load_traffic(file):
     name = file.name.lower()
@@ -104,7 +104,7 @@ df_monthly = df_monthly.merge(df_traffic, on="Mois", how="left").fillna({"Footfa
 # --- Period of Study ---
 start = df_monthly["Mois"].min().strftime("%b %Y")
 end   = df_monthly["Mois"].max().strftime("%b %Y")
-st.markdown(f"**Période d’étude :** {start} – {end}")
+st.markdown(f"**Période d’étude :** {start} - {end}")
 
 # --- KPI Principaux ---
 st.header("KPI principaux")
@@ -134,7 +134,7 @@ c8.metric("Mois de pic growth",   peak_month,                 help="Mois avec le
 # --- KPI Footfall ---
 st.markdown("### KPI Traffic physique")
 total_footfall = int(df_monthly["Footfall"].sum())
-st.metric("Total Footfall", f"{total_footfall:,}", help="Total des passages physiques au centre.")
+st.metric("Total Footfall", f"{total_footfall:,}", help="Total des passages physiques au centre.")  # <— CORRIGER ici si variable mal orthographiée
 
 # --- Data Table ---
 st.subheader("Données consolidées")
@@ -145,7 +145,7 @@ st.dataframe(df_disp.style.format({
     "Budget":"{:.0f}",    "Footfall":"{:,}"
 }), use_container_width=True)
 
-# --- Plot helper: n’utilise color que si non-None ---
+# --- Plot helper & Figures ---
 def plot_series(x, y, title, ylabel, color=None, sec=None, sec_label=None):
     fig, ax = plt.subplots(figsize=(10,4))
     if color:
@@ -164,40 +164,35 @@ def plot_series(x, y, title, ylabel, color=None, sec=None, sec_label=None):
     return fig
 
 # --- Figures & Display ---
-fig1 = plot_series(
-    df_monthly["Mois"], df_monthly["Followers"],
-    "Followers vs Budget", "Followers",
-    color="tab:blue", sec=df_monthly["Budget"], sec_label="Budget (EUR)"
-)
+fig1 = plot_series(df_monthly["Mois"], df_monthly["Followers"],
+                   "Followers vs Budget", "Followers",
+                   color="tab:blue", sec=df_monthly["Budget"], sec_label="Budget (EUR)")
 st.pyplot(fig1)
 
-fig2 = plot_series(
-    df_monthly["Mois"], df_monthly["Visites"],
-    "Visites profil", "Visites",
-    color="tab:orange"
-)
+fig2 = plot_series(df_monthly["Mois"], df_monthly["Visites"],
+                   "Visites profil", "Visites",
+                   color="tab:orange")
 st.pyplot(fig2)
 
-fig3 = plot_series(
-    df_monthly["Mois"], df_monthly["Vues"],
-    "Vues contenu", "Vues",
-    color="tab:green"
-)
+fig3 = plot_series(df_monthly["Mois"], df_monthly["Vues"],
+                   "Vues contenu", "Vues",
+                   color="tab:green")
 st.pyplot(fig3)
 
-fig4 = plot_series(
-    df_monthly["Mois"], df_monthly["Footfall"],
-    "Footfall mensuel", "Footfall",
-    color="tab:gray"
-)
+fig4 = plot_series(df_monthly["Mois"], df_monthly["Footfall"],
+                   "Footfall mensuel", "Footfall",
+                   color="tab:gray")
 st.pyplot(fig4)
 
 # --- Export PDF ---
 st.header("Export PDF")
 if st.button("Générer le rapport PDF"):
-    pdf = FPDF('P','mm','A4'); pdf.add_page()
+    pdf = FPDF('P','mm','A4')
+    pdf.add_page()
+
+    # Titre
     pdf.set_font('Arial','B',16)
-    pdf.cell(0,10, f"Rapport Nice Valley ({start} – {end})", ln=True, align='C')
+    pdf.cell(0,10, f"Rapport Nice Valley ({start} - {end})", ln=True, align='C')
     pdf.ln(5)
 
     # KPI Principaux
@@ -221,7 +216,7 @@ if st.button("Générer le rapport PDF"):
     # KPI Footfall
     pdf.set_font('Arial','B',14); pdf.cell(0,8,"KPI Traffic physique", ln=True)
     pdf.set_font('Arial','',11)
-    pdf.cell(0,6,f"Total Footfall      : {total_footfall:,}", ln=True)
+    pdf.cell(0,6,f"Total Footfall      : {total_footfall:,}", ln=True)  # <— même correction ici
     pdf.ln(5)
 
     # Figures helper
@@ -242,7 +237,7 @@ if st.button("Générer le rapport PDF"):
     pdf_bytes = pdf.output(dest='S').encode('latin-1', 'ignore')
     fname = f"rapport_nice_valley_{start.replace(' ','_')}_{end.replace(' ','_')}.pdf"
     st.download_button("Télécharger le rapport PDF", pdf_bytes, file_name=fname, mime="application/pdf")
-    st.success("Rapport PDF généré !")
+    st.success("Rapport PDF généré !")
 else:
     st.info("Clique sur le bouton pour générer le rapport PDF.")
 
